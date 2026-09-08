@@ -1,0 +1,58 @@
+name: Materialize bundled data files
+on:
+  push:
+    paths:
+      - 'data/_bundle/**'
+      - '.github/workflows/materialize-bundled-files.yml'
+  workflow_dispatch:
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble and verify bundle parts
+        run: |
+          python3 <<'PY'
+          import base64, gzip, hashlib, pathlib, sys
+          root = pathlib.Path('.')
+          def assemble(prefix, out_path):
+              parts_dir = root / 'data' / '_bundle' / prefix
+              if not parts_dir.exists():
+                  print('skip', prefix)
+                  return False
+              files = sorted(parts_dir.iterdir(), key=lambda p: p.name)
+              chunks = []
+              for f in files:
+                  idx, sha12 = f.name.split('.', 1)
+                  data = f.read_text().replace('\n','')
+                  got = hashlib.sha256(data.encode()).hexdigest()[:12]
+                  if got != sha12:
+                      print('HASH MISMATCH', f.name, 'expected', sha12, 'got', got)
+                      sys.exit(1)
+                  chunks.append(data)
+              raw = gzip.decompress(base64.b64decode(''.join(chunks)))
+              out_path.write_bytes(raw)
+              print(prefix, 'ok', 'md5', hashlib.md5(raw).hexdigest(), 'len', len(raw))
+              return True
+          assemble('nfl-cache', root / 'data' / 'nfl-cache.json')
+          assemble('package-lock', root / 'package-lock.json')
+          PY
+      - name: Commit materialized files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/nfl-cache.json package-lock.json || true
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            if git diff --cached --name-only | grep -q 'nfl-cache.json' && git diff --cached --name-only | grep -q 'package-lock.json'; then
+              git commit -m "Add bundled NFL schedule cache for Vercel" -m "Add package-lock.json"
+            elif git diff --cached --name-only | grep -q 'nfl-cache.json'; then
+              git commit -m "Add bundled NFL schedule cache for Vercel"
+            else
+              git commit -m "Add package-lock.json"
+            fi
+            git push
+          fi
