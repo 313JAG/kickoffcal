@@ -1,10 +1,9 @@
 name: Materialize bundled data files
 on:
+  workflow_dispatch:
   push:
     paths:
-      - 'data/_bundle/**'
       - '.github/workflows/materialize-bundled-files.yml'
-  workflow_dispatch:
 jobs:
   materialize:
     runs-on: ubuntu-latest
@@ -12,47 +11,42 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble and verify bundle parts
+      - name: Download and verify exact files
         run: |
-          python3 <<'PY'
-          import base64, gzip, hashlib, pathlib, sys
-          root = pathlib.Path('.')
-          def assemble(prefix, out_path):
-              parts_dir = root / 'data' / '_bundle' / prefix
-              if not parts_dir.exists():
-                  print('skip', prefix)
-                  return False
-              files = sorted(parts_dir.iterdir(), key=lambda p: p.name)
-              chunks = []
-              for f in files:
-                  idx, sha12 = f.name.split('.', 1)
-                  data = f.read_text().replace('\n','')
-                  got = hashlib.sha256(data.encode()).hexdigest()[:12]
-                  if got != sha12:
-                      print('HASH MISMATCH', f.name, 'expected', sha12, 'got', got)
-                      sys.exit(1)
-                  chunks.append(data)
-              raw = gzip.decompress(base64.b64decode(''.join(chunks)))
-              out_path.write_bytes(raw)
-              print(prefix, 'ok', 'md5', hashlib.md5(raw).hexdigest(), 'len', len(raw))
-              return True
-          assemble('nfl-cache', root / 'data' / 'nfl-cache.json')
-          assemble('package-lock', root / 'package-lock.json')
+          set -euo pipefail
+          mkdir -p data
+          curl -fsSL -A curl/8 'https://d.uguu.se/tVwZgwNK.gz' | gunzip > data/nfl-cache.json
+          curl -fsSL -A curl/8 'https://n.uguu.se/OdlMaSCN.gz' | gunzip > package-lock.json
+          echo 'ccd11827ae6d69ba542b29225c1e121f  data/nfl-cache.json' | md5sum -c -
+          echo '9014b21a8c440d9a9f555c1c558a47ea  package-lock.json' | md5sum -c -
+          python3 - <<'PY'
+          import json
+          cache = json.load(open('data/nfl-cache.json'))
+          assert len(cache.get('games', [])) == 321, len(cache.get('games', []))
+          assert len(cache.get('teams', [])) == 32
+          print('cache ok', cache.get('syncedAt'), 'bytes', open('data/nfl-cache.json','rb').tell() if False else __import__('os').path.getsize('data/nfl-cache.json'))
+          print('lock bytes', __import__('os').path.getsize('package-lock.json'))
           PY
       - name: Commit materialized files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/nfl-cache.json package-lock.json || true
+          git add data/nfl-cache.json package-lock.json
           if git diff --cached --quiet; then
             echo "No changes"
-          else
-            if git diff --cached --name-only | grep -q 'nfl-cache.json' && git diff --cached --name-only | grep -q 'package-lock.json'; then
-              git commit -m "Add bundled NFL schedule cache for Vercel" -m "Add package-lock.json"
-            elif git diff --cached --name-only | grep -q 'nfl-cache.json'; then
-              git commit -m "Add bundled NFL schedule cache for Vercel"
-            else
-              git commit -m "Add package-lock.json"
-            fi
-            git push
+            exit 0
           fi
+          # Prefer separate commits matching requested messages when both change
+          CACHE_CHANGED=$(git diff --cached --name-only | grep -c 'nfl-cache.json' || true)
+          LOCK_CHANGED=$(git diff --cached --name-only | grep -c 'package-lock.json' || true)
+          if [ "$CACHE_CHANGED" -eq 1 ] && [ "$LOCK_CHANGED" -eq 1 ]; then
+            git reset HEAD package-lock.json
+            git commit -m "Add bundled NFL schedule cache for Vercel"
+            git add package-lock.json
+            git commit -m "Add package-lock.json"
+          elif [ "$CACHE_CHANGED" -eq 1 ]; then
+            git commit -m "Add bundled NFL schedule cache for Vercel"
+          else
+            git commit -m "Add package-lock.json"
+          fi
+          git push
