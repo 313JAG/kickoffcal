@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans), "DM Sans", sans-serif;
+  --font-heading: var(--font-display), Syne, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #07150f;
+  --foreground: #f4f0e6;
+  --card: #0d2218;
+  --card-foreground: #f4f0e6;
+  --popover: #0d2218;
+  --popover-foreground: #f4f0e6;
+  --primary: #e8b84a;
+  --primary-foreground: #142018;
+  --secondary: #143324;
+  --secondary-foreground: #f4f0e6;
+  --muted: #143324;
+  --muted-foreground: #9bc7a8;
+  --accent: #1a3d2b;
+  --accent-foreground: #f4f0e6;
+  --destructive: #ef6b5a;
+  --border: rgb(255 255 255 / 12%);
+  --input: rgb(255 255 255 / 14%);
+  --ring: #e8b84a;
+  --chart-1: #e8b84a;
+  --chart-2: #9bc7a8;
+  --chart-3: #4f8f6a;
+  --chart-4: #f4f0e6;
+  --chart-5: #2f6b4a;
+  --radius: 0.75rem;
+  --sidebar: #0d2218;
+  --sidebar-foreground: #f4f0e6;
+  --sidebar-primary: #e8b84a;
+  --sidebar-primary-foreground: #142018;
+  --sidebar-accent: #143324;
+  --sidebar-accent-foreground: #f4f0e6;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: #e8b84a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@keyframes field-drift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.hero-field {
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgb(232 184 74 / 18%), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgb(79 143 106 / 35%), transparent 50%),
+    linear-gradient(135deg, #06120d 0%, #0c2a1c 45%, #0a1c14 100%);
+  background-size: 120% 120%;
+  animation: field-drift 18s ease-in-out infinite;
+}
+
+.rise-in {
+  animation: rise-in 0.7s ease-out both;
+}
+
+.rise-in-delay {
+  animation: rise-in 0.8s ease-out 0.15s both;
+}
+
+.glow-orb {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
